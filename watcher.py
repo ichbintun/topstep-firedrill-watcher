@@ -36,7 +36,7 @@ STATE_PATH = Path(__file__).resolve().parent / "state.json"
 
 # Cau nay chi xuat hien khi drill DA ket thuc. Mat cau nay = co bien dong dang chu y.
 DORMANT_MARKERS = [
-    "missed your tuanchung",
+    "missed your shot",
 ]
 
 UA = (
