@@ -2,9 +2,8 @@ name: Topstep Fire Drill Watcher
 
 on:
   schedule:
-    # Moi 10 phut, 13:00-22:59 UTC, Thu 2 - Thu 6
-    # = 20:00 - 05:59 gio Viet Nam (trung gio TopstepTV phat song)
-    - cron: '*/10 13-22 * * 1-5'
+    # Moi 5 phut, 24/7. Repo public nen Actions mien phi khong gioi han phut.
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:
