@@ -5,10 +5,10 @@ on:
     # Moi 10 phut, 13:00-22:59 UTC, Thu 2 - Thu 6
     # = 20:00 - 05:59 gio Viet Nam (trung gio TopstepTV phat song)
     - cron: '*/10 13-22 * * 1-5'
-  workflow_dispatch:        # cho phep bam chay tay de test
+  workflow_dispatch:
 
 permissions:
-  contents: write           # can quyen commit state.json
+  contents: write
 
 concurrency:
   group: firedrill-watcher
@@ -36,13 +36,30 @@ jobs:
 
       - name: Luu trang thai
         run: |
-          if [[ -n "$(git status --porcelain state.json)" ]]; then
-            git config user.name  "firedrill-bot"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name  "firedrill-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # State vua tinh xong luon la cai dung -> dong bo ve origin roi dat de len,
+          # khong bao gio phai merge, khong bao gio conflict.
+          for attempt in 1 2 3; do
+            cp state.json /tmp/state.json
+            git fetch -q origin "${GITHUB_REF_NAME}"
+            git reset -q --hard "origin/${GITHUB_REF_NAME}"
+            cp /tmp/state.json state.json
+
+            if [[ -z "$(git status --porcelain state.json)" ]]; then
+              echo "state.json khong doi"
+              exit 0
+            fi
+
             git add state.json
-            git commit -m "state: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            git pull --rebase --autostash
-            git push
-          else
-            echo "state.json khong doi"
-          fi
+            git commit -qm "state: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+            if git push -q origin "HEAD:${GITHUB_REF_NAME}"; then
+              echo "da luu state.json (lan thu $attempt)"
+              exit 0
+            fi
+            echo "push that bai, origin vua doi - thu lai..."
+            sleep 3
+          done
+          echo "::warning::Khong push duoc state.json sau 3 lan"
