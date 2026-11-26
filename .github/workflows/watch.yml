@@ -1,0 +1,48 @@
+name: Topstep Fire Drill Watcher
+
+on:
+  schedule:
+    # Moi 10 phut, 13:00-22:59 UTC, Thu 2 - Thu 6
+    # = 20:00 - 05:59 gio Viet Nam (trung gio TopstepTV phat song)
+    - cron: '*/10 13-22 * * 1-5'
+  workflow_dispatch:        # cho phep bam chay tay de test
+
+permissions:
+  contents: write           # can quyen commit state.json
+
+concurrency:
+  group: firedrill-watcher
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Kiem tra trang fire drill
+        env:
+          GMAIL_USER:          ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD:  ${{ secrets.GMAIL_APP_PASSWORD }}
+          MAIL_TO:             ${{ secrets.MAIL_TO }}
+          TELEGRAM_BOT_TOKEN:  ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:    ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python watcher.py
+
+      - name: Luu trang thai
+        run: |
+          if [[ -n "$(git status --porcelain state.json)" ]]; then
+            git config user.name  "firedrill-bot"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add state.json
+            git commit -m "state: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git pull --rebase --autostash
+            git push
+          else
+            echo "state.json khong doi"
+          fi
